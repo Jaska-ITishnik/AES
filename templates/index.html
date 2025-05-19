@@ -1,0 +1,334 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Визуализатор шифрования AES</title>
+    <link rel="stylesheet" href="{% static 'apps/css/styles.css' %}">
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Визуализатор шифрования AES by @Jaska_ITishnik</h1>
+        <nav>
+            <ul>
+                <li><a href="#" class="active" data-section="encryption">Шифрование</a></li>
+                <li><a href="#" data-section="key-expansion">Расширение ключа</a></li>
+                <li><a href="#" data-section="about">О AES</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Encryption Section -->
+        <section id="encryption" class="active">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Шифрование AES-128</h2>
+                    <p>Введите открытый текст и ключ для шифрования с помощью AES-128</p>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'main_page' %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="hex-input" name="hex_input" checked>
+                                <label for="hex-input">Шестнадцатеричный ввод</label>
+                            </div>
+                            <p class="help-text">
+                                Вводите значения в шестнадцатеричном формате (например,
+                                3243f6a8885a308d313198a2e0370734)
+                            </p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="plaintext">Открытый текст</label>
+                            <textarea id="plaintext" name="input_key" placeholder="3243f6a8885a308d313198a2e0370734"
+                                      required>{{ input_key|default:"" }}</textarea>
+                            {% if plaintext_error %}
+                                <div class="error-message">{{ plaintext_error }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="key">Ключ</label>
+                            <textarea id="key" name="cipher_key" placeholder="2b7e151628aed2a6abf7158809cf4f3c"
+                                      required>{{ cipher_key|default:"" }}</textarea>
+                            {% if key_error %}
+                                <div class="error-message">{{ key_error }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ciphertext">Зашифрованный текст</label>
+                            <textarea id="ciphertext" name="ciphertext" readonly>{{ ciphertext|default:"" }}</textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn primary">Зашифровать</button>
+                            <button type="reset" class="btn secondary">Сбросить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if rounds %}
+                <div id="visualization-container">
+                    <h2>Визуализация процесса шифрования</h2>
+
+                    <div class="round-navigation">
+                        <button id="prev-round" class="btn icon-btn" {% if current_round == 0 %}disabled{% endif %}>
+                            <span class="icon">←</span>
+                        </button>
+                        <span id="round-indicator">Раунд <span id="current-round">{{ current_round|default:"0" }}</span> из <span
+                                id="total-rounds">{{ rounds|length|add:"-1" }}</span></span>
+                        <button id="next-round" class="btn icon-btn"
+                                {% if current_round == rounds|length|add:"-1" %}disabled{% endif %}>
+                            <span class="icon">→</span>
+                        </button>
+                    </div>
+
+                    <div class="tabs">
+                        <div class="tab-list">
+                            <button class="tab-btn active" data-tab="state">Состояние</button>
+                            <button class="tab-btn" data-tab="subbytes" {% if current_round == 0 %}disabled{% endif %}>
+                                SubBytes
+                            </button>
+                            <button class="tab-btn" data-tab="shiftrows" {% if current_round == 0 %}disabled{% endif %}>
+                                ShiftRows
+                            </button>
+                            <button class="tab-btn" data-tab="mixcolumns"
+                                    {% if current_round == 0 or current_round == rounds|length|add:"-1" %}disabled{% endif %}>
+                                MixColumns
+                            </button>
+                            <button class="tab-btn" data-tab="addroundkey">AddRoundKey</button>
+                        </div>
+
+                        <div class="tab-content active" id="state-tab">
+                            <div class="matrix-container">
+                                <h3>Входное состояние</h3>
+                                <div class="matrix">
+                                    {% with matrix=current_round_data.input_matrix %}
+                                        {% for row in matrix %}
+                                            {% for cell in row %}
+                                                <div class="matrix-cell">{{ cell }}</div>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% endwith %}
+                                </div>
+                            </div>
+                            <p class="description">Начальное состояние перед любыми преобразованиями</p>
+                        </div>
+
+                        <div class="tab-content" id="subbytes-tab">
+                            <div class="matrix-container">
+                                <h3>После SubBytes</h3>
+                                <div class="matrix">
+                                    {% if current_round > 0 %}
+                                        {% with matrix=current_round_data.subbytes_matrix %}
+                                            {% for row in matrix %}
+                                                {% for cell in row %}
+                                                    <div class="matrix-cell">{{ cell }}</div>
+                                                {% endfor %}
+                                            {% endfor %}
+                                        {% endwith %}
+                                    {% else %}
+                                        <div class="matrix-cell empty">Начальный раунд не включает SubBytes</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <p class="description">Каждый байт заменяется соответствующим значением из S-box</p>
+                        </div>
+
+                        <div class="tab-content" id="shiftrows-tab">
+                            <div class="matrix-container">
+                                <h3>После ShiftRows</h3>
+                                <div class="matrix">
+                                    {% if current_round > 0 %}
+                                        {% with matrix=current_round_data.shiftrows_matrix %}
+                                            {% for row in matrix %}
+                                                {% for cell in row %}
+                                                    <div class="matrix-cell">{{ cell }}</div>
+                                                {% endfor %}
+                                            {% endfor %}
+                                        {% endwith %}
+                                    {% else %}
+                                        <div class="matrix-cell empty">Начальный раунд не включает ShiftRows</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <p class="description">Строки циклически сдвигаются: строка 0 на 0, строка 1 на 1, строка 2
+                                на 2, строка 3 на 3 позиции</p>
+                        </div>
+
+                        <div class="tab-content" id="mixcolumns-tab">
+                            <div class="matrix-container">
+                                <h3>После MixColumns</h3>
+                                <div class="matrix">
+                                    {% if current_round > 0 and current_round < rounds|length|add:"-1" %}
+                                        {% with matrix=current_round_data.mixcolumns_matrix %}
+                                            {% for row in matrix %}
+                                                {% for cell in row %}
+                                                    <div class="matrix-cell">{{ cell }}</div>
+                                                {% endfor %}
+                                            {% endfor %}
+                                        {% endwith %}
+                                    {% else %}
+                                        <div class="matrix-cell empty">{% if current_round == 0 %}Начальный раунд не
+                                            включает MixColumns{% else %}Финальный раунд не включает
+                                            MixColumns{% endif %}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <p class="description">Столбцы смешиваются с использованием матричного умножения в
+                                GF(2^8)</p>
+                        </div>
+
+                        <div class="tab-content" id="addroundkey-tab">
+                            <div class="matrix-container">
+                                <h3>Раундовый ключ</h3>
+                                <div class="matrix">
+                                    {% with matrix=current_round_data.roundkey_matrix %}
+                                        {% for row in matrix %}
+                                            {% for cell in row %}
+                                                <div class="matrix-cell">{{ cell }}</div>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% endwith %}
+                                </div>
+
+                                <h3>После AddRoundKey</h3>
+                                <div class="matrix">
+                                    {% with matrix=current_round_data.output_matrix %}
+                                        {% for row in matrix %}
+                                            {% for cell in row %}
+                                                <div class="matrix-cell">{{ cell }}</div>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% endwith %}
+                                </div>
+                            </div>
+                            <p class="description">Раундовый ключ подвергается операции XOR с состоянием</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+
+        <!-- Key Expansion Section -->
+        <section id="key-expansion">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Расширение ключа</h2>
+                    <p>Визуализация процесса расширения ключа AES</p>
+                </div>
+                <div class="card-body">
+                    {% if key_schedule %}
+                        <div class="key-expansion-table">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>i (десятичное)</th>
+                                    <th>temp</th>
+                                    <th>После RotWord()</th>
+                                    <th>После SubWord()</th>
+                                    <th>Rcon[i/Nk]</th>
+                                    <th>После XOR с Rcon</th>
+                                    <th>w[i-Nk]</th>
+                                    <th>w[i]= temp XOR w[i-Nk]</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for entry in key_schedule %}
+                                    <tr>
+                                        <td>{{ entry.i }}</td>
+                                        <td>{{ entry.temp }}</td>
+                                        <td>{{ entry.after_rotword|default:"-" }}</td>
+                                        <td>{{ entry.after_subword|default:"-" }}</td>
+                                        <td>{{ entry.rcon_const|default:"-" }}</td>
+                                        <td>{{ entry.after_xor_with_rcon|default:"-" }}</td>
+                                        <td>{{ entry.w_i_nk }}</td>
+                                        <td>{{ entry.last_xor }}</td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <p>Сначала зашифруйте данные, чтобы увидеть расписание ключей</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- About AES Section -->
+        <section id="about">
+            <div class="card">
+                <div class="card-header">
+                    <h2>О AES</h2>
+                    <p>Понимание стандарта расширенного шифрования</p>
+                </div>
+                <div class="card-body">
+                    <div class="about-content">
+                        <h3>Что такое AES?</h3>
+                        <p>
+                            Стандарт расширенного шифрования (AES) — это симметричный блочный шифр, выбранный
+                            правительством США для защиты секретной информации. AES применяется в программном и
+                            аппаратном обеспечении по всему миру для шифрования конфиденциальных данных.
+                        </p>
+
+                        <h3>Основные характеристики</h3>
+                        <ul>
+                            <li>Размер блока: 128 бит (16 байт)</li>
+                            <li>Размеры ключа: 128, 192 или 256 бит</li>
+                            <li>Количество раундов: 10, 12 или 14 (в зависимости от размера ключа)</li>
+                            <li>Работает с массивом байтов 4×4 (состояние)</li>
+                        </ul>
+
+                        <h3>Процесс шифрования AES</h3>
+                        <ol>
+                            <li><strong>Расширение ключа</strong>: Ключ шифрования расширяется в расписание ключей.</li>
+                            <li><strong>Начальный раунд</strong>: AddRoundKey — каждый байт состояния комбинируется с
+                                байтом раундового ключа с помощью операции XOR.
+                            </li>
+                            <li><strong>Основные раунды</strong> (9, 11 или 13 раундов):
+                                <ul>
+                                    <li><strong>SubBytes</strong> — нелинейный шаг подстановки, где каждый байт
+                                        заменяется другим в соответствии с таблицей подстановки (S-box).
+                                    </li>
+                                    <li><strong>ShiftRows</strong> — шаг транспозиции, при котором последние три строки
+                                        состояния циклически сдвигаются.
+                                    </li>
+                                    <li><strong>MixColumns</strong> — операция смешивания, которая работает со столбцами
+                                        состояния, комбинируя четыре байта в каждом столбце.
+                                    </li>
+                                    <li><strong>AddRoundKey</strong> — каждый байт состояния комбинируется с раундовым
+                                        ключом с помощью операции XOR.
+                                    </li>
+                                </ul>
+                            </li>
+                            <li><strong>Финальный раунд</strong> (1 раунд):
+                                <ul>
+                                    <li>SubBytes</li>
+                                    <li>ShiftRows</li>
+                                    <li>AddRoundKey</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© {% now "Y" %} Визуализатор шифрования AES by @Jaska_ITishnik</p>
+    </footer>
+</div>
+
+<script src="{% static 'apps/js/scripts.js' %}"></script>
+</body>
+</html>
