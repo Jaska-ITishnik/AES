@@ -155,15 +155,48 @@ class Aes:
                 res[j][i] = f'{r:02x}'
         return res
 
+    def make_matrix(self, s: str):
+        return self.after_subBytes_matrix(self.make_separate_value(s))
+
     def encryption(self, tmp_start_of_round, tmp_round_key_value):
-        temp_round_key = ""
-        for j in list(self.gen_key(tmp_start_of_round, tmp_round_key_value).values())[:4]:
-            temp_round_key += j['last_xor']
-        start_of_round = self.xor_hex_numbers(tmp_start_of_round, tmp_round_key_value)
-        after_subBytes = self.find_after_subword(start_of_round)
-        after_subBytes_matrix_version = self.after_subBytes_matrix(self.make_separate_value(after_subBytes))
-        after_shiftRows = self.create_after_shiftRows(after_subBytes_matrix_version)
-        after_MixColumn = self.make_mixColumn(after_shiftRows, mix_columns_matrix)
-        start_of_round_second = self.after_subBytes_matrix(
-            self.make_separate_value(self.xor_hex_numbers(''.join(sum(after_MixColumn, [])), temp_round_key)))
-        return ''.join(sum(start_of_round_second, []))
+        encrypt_res = []
+        for i in range(2):
+            temp_round_key = ""
+            for j in list(self.gen_key(tmp_start_of_round, tmp_round_key_value).values())[:4]:
+                temp_round_key += j['last_xor']
+            if i == 0:
+                encrypt_res.append({
+                    "start_of_round": self.make_matrix(tmp_start_of_round),
+                    "round_key_matrix": self.make_matrix(tmp_round_key_value)
+                })
+            else:
+                start_of_round = self.xor_hex_numbers(tmp_start_of_round, tmp_round_key_value)
+                after_subBytes = self.find_after_subword(start_of_round)
+                after_subBytes_matrix_version = self.make_matrix(after_subBytes)
+                after_shiftRows = self.create_after_shiftRows(after_subBytes_matrix_version)
+                after_MixColumn = self.make_mixColumn(after_shiftRows, mix_columns_matrix)
+                start_of_round_second = self.after_subBytes_matrix(
+                    self.make_separate_value(self.xor_hex_numbers(''.join(sum(after_MixColumn, [])), temp_round_key)))
+                res_mix_column = [[0 for _ in range(4)] for _ in range(4)]
+                for i in range(len(after_MixColumn)):
+                    for j in range(len(after_MixColumn[i])):
+                        res_mix_column[j][i] = after_MixColumn[i][j]
+                encrypt_res.append({
+                    "start_of_round": self.make_matrix(start_of_round),
+                    "after_subBytes": self.make_matrix(after_subBytes),
+                    "after_shiftRows": after_shiftRows,
+                    "after_MixColumn": res_mix_column,
+                    "round_key_matrix": self.make_matrix(temp_round_key),
+                })
+            print(encrypt_res)
+        encrypt_res.append(
+            {"start_of_round": start_of_round_second,
+             "after_subBytes": self.make_matrix(self.find_after_subword(
+                 self.xor_hex_numbers(''.join(sum(after_MixColumn, [])), temp_round_key)))
+             })
+        return {
+            "ciphertext": start_of_round_second,
+            "encrypting": encrypt_res
+        }
+
+# print(Aes().encryption("3243f6a8885a308d313198a2e0370734", "2b7e151628aed2a6abf7158809cf4f3c"))

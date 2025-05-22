@@ -59,12 +59,128 @@
                                 <div class="error-message">{{ key_error }}</div>
                             {% endif %}
                         </div>
-
                         <div class="form-group">
                             <label for="ciphertext">Зашифрованный текст</label>
-                            <textarea id="ciphertext" name="ciphertext" readonly>{{ ciphertext|default:"" }}</textarea>
-                        </div>
 
+                            {% if rounds %}
+                                <div class="encryption-result-table">
+                                    <div class="encryption-header">
+                                        {#                                        <div class="input-display">#}
+                                        {#                                            <div class="input-label">Input =</div>#}
+                                        {#                                            <div class="input-value">{{ input_key }}</div>#}
+                                        {#                                        </div>#}
+                                        {#                                        <div class="input-display">#}
+                                        {#                                            <div class="input-label">Cipher Key =</div>#}
+                                        {#                                            <div class="input-value">{{ cipher_key }}</div>#}
+                                        {#                                        </div>#}
+                                    </div>
+                                    <div class="encryption-table">
+                                        <div class="table-header">
+                                            <div class="header-cell round-number">Round<br>Number</div>
+                                            <div class="header-cell">Start of<br>Round</div>
+                                            <div class="header-cell">After<br>SubBytes</div>
+                                            <div class="header-cell">After<br>ShiftRows</div>
+                                            <div class="header-cell">After<br>MixColumns</div>
+                                            <div class="header-cell">Round Key<br>Value</div>
+                                        </div>
+
+                                        {% for round in rounds %}
+                                            <div class="table-row">
+                                                <div class="round-number-cell">
+                                                    {% if forloop.first %}
+                                                        input
+                                                    {% else %}
+                                                        {{ forloop.counter0 }}
+                                                    {% endif %}
+                                                </div>
+
+                                                <!-- Start of Round Matrix -->
+                                                <div class="matrix-cell">
+                                                    <div class="matrix">
+                                                        {% for row in round.start_of_round %}
+                                                            {% for cell in row %}
+                                                                <div class="matrix-item">{{ cell }}</div>
+                                                            {% endfor %}
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+
+                                                <!-- After SubBytes Matrix -->
+                                                <div class="matrix-cell">
+                                                    <div class="matrix">
+                                                        {% if not forloop.first %}
+                                                            {% for row in round.after_subBytes %}
+                                                                {% for cell in row %}
+                                                                    <div class="matrix-item">{{ cell }}</div>
+                                                                {% endfor %}
+                                                            {% endfor %}
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+
+                                                <!-- After ShiftRows Matrix -->
+                                                <div class="matrix-cell">
+                                                    <div class="matrix">
+                                                        {% if not forloop.first %}
+                                                            {% for row in round.after_shiftRows %}
+                                                                {% for cell in row %}
+                                                                    <div class="matrix-item">{{ cell }}</div>
+                                                                {% endfor %}
+                                                            {% endfor %}
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+
+                                                <!-- After MixColumns Matrix -->
+                                                <div class="matrix-cell">
+                                                    <div class="matrix">
+                                                        {% if not forloop.first and not forloop.last %}
+                                                            {% for row in round.after_MixColumn %}
+                                                                {% for cell in row %}
+                                                                    <div class="matrix-item">{{ cell }}</div>
+                                                                {% endfor %}
+                                                            {% endfor %}
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+
+                                                <!-- Round Key Matrix -->
+                                                <div class="matrix-cell">
+                                                    <div class="matrix">
+                                                        {% for row in round.round_key_matrix %}
+                                                            {% for cell in row %}
+                                                                <div class="matrix-item">{{ cell }}</div>
+                                                            {% endfor %}
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+
+                                                <!-- Operation and Result -->
+                                                <div class="result">=</div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+
+                                    <div class="encryption-footer">
+                                        <div class="output-display">
+                                            <div class="matrix-cell">
+                                                <div class="output-label">Output = </div>
+                                                <div class="matrix">
+                                                    {% for row in ciphertext %}
+                                                        {% for cell in row %}
+                                                            <div class="matrix-item">{{ cell }}</div>
+                                                        {% endfor %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <textarea id="ciphertext" name="ciphertext"
+                                          readonly>{{ ciphertext|default:"" }}</textarea>
+                            {% endif %}
+                        </div>
                         <div class="form-actions">
                             <button type="submit" class="btn primary">Зашифровать</button>
                             <button type="reset" class="btn secondary">Сбросить</button>

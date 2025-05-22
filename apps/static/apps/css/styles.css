@@ -416,3 +416,146 @@ footer {
         padding: 8px 4px;
     }
 }
+
+/* AES Encryption Result Table Styles */
+.encryption-result-table {
+    margin-top: 10px;
+    background-color: #f5f7fa;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.encryption-header, .encryption-footer {
+    background-color: white;
+    padding: 10px 15px;
+    border-bottom: 1px solid #e6e9ed;
+}
+
+.encryption-footer {
+    border-top: 1px solid #e6e9ed;
+    border-bottom: none;
+}
+
+.input-display, .output-display {
+    display: flex;
+    font-family: 'Courier New', monospace;
+    margin: 5px 0;
+}
+
+.input-label, .output-label {
+    font-weight: bold;
+    min-width: 120px;
+}
+
+.input-value, .output-value {
+    word-break: break-all;
+}
+
+.encryption-table {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.table-header {
+    display: flex;
+    background-color: #4a89dc;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+}
+
+.header-cell {
+    flex: 1;
+    padding: 10px;
+    border-right: 1px solid rgba(255, 255, 255, 0.2);
+    min-width: 120px;
+}
+
+.header-cell:last-child {
+    border-right: none;
+}
+
+.round-number {
+    min-width: 80px;
+    max-width: 80px;
+}
+
+.table-row {
+    display: flex;
+    background-color: white;
+    border-bottom: 1px solid #e6e9ed;
+    position: relative;
+    align-items: center;
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.round-number-cell {
+    min-width: 80px;
+    max-width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    padding: 10px 0;
+}
+
+.matrix-cell {
+    flex: 1;
+    padding: 10px;
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.matrix {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 1px;
+    border: 2px solid #000;
+    width: 100%;
+    max-width: 120px;
+}
+
+.matrix-item {
+    background-color: white;
+    border: 1px solid #e6e9ed;
+    padding: 4px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.operation, .result {
+    position: absolute;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.operation {
+    right: 130px;
+}
+
+.result {
+    right: -15px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .encryption-table {
+        overflow-x: auto;
+    }
+
+    .table-header, .table-row {
+        width: 900px;
+    }
+}
